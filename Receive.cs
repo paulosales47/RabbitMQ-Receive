@@ -6,25 +6,32 @@ using System.Text;
 
 public class Receive{
     
-    public  static void Main(){
+    public static void Main(string[] args){
+
+        if(args.Length < 1)
+            return;
 
         var factory = new ConnectionFactory(){ HostName = "localhost" };
         using (var connection = factory.CreateConnection())
         using (var channel = connection.CreateModel())
         {
-            channel.ExchangeDeclare(exchange: "logs", type: ExchangeType.Fanout);
-            
+            channel.ExchangeDeclare(exchange: "direct_logs", type: ExchangeType.Direct);
             var queueName = channel.QueueDeclare().QueueName;
-            channel.QueueBind(queue: queueName, exchange: "logs", routingKey: "");
 
             System.Console.WriteLine("[*] Waiting for logs");
+
+            foreach(var severity in args){
+                channel.QueueBind(queue: queueName, exchange: "direct_logs", routingKey: severity);
+            }
 
             var consumer = new EventingBasicConsumer(channel);
             consumer.Received += (model, ea) => 
             { 
                 var body = ea.Body.ToArray();
                 var message = Encoding.UTF8.GetString(body);
-                System.Console.WriteLine("[x] {0}", message);
+                var routingKey = ea.RoutingKey;
+
+                System.Console.WriteLine("[x] Received '{0}':'{1}'", routingKey, message);
             };
 
             channel.BasicConsume(queue: queueName, autoAck: true, consumer: consumer);
