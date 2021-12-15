@@ -15,13 +15,13 @@ public class Receive{
         using (var connection = factory.CreateConnection())
         using (var channel = connection.CreateModel())
         {
-            channel.ExchangeDeclare(exchange: "direct_logs", type: ExchangeType.Direct);
+            channel.ExchangeDeclare(exchange: "topic_logs", type: ExchangeType.Topic);
             var queueName = channel.QueueDeclare().QueueName;
 
             System.Console.WriteLine("[*] Waiting for logs");
 
-            foreach(var severity in args){
-                channel.QueueBind(queue: queueName, exchange: "direct_logs", routingKey: severity);
+            foreach(var topic in args){
+                channel.QueueBind(queue: queueName, exchange: "topic_logs", routingKey: topic);
             }
 
             var consumer = new EventingBasicConsumer(channel);
